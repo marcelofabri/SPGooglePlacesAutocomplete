@@ -48,15 +48,25 @@
         if (error) {
             block(nil, nil, error);
         } else {
-            NSString *addressString = placeDictionary[@"formatted_address"];
-            [[self geocoder] geocodeAddressString:addressString completionHandler:^(NSArray *placemarks, NSError *error) {
+            void (^completionHandler)(NSArray *, NSError *) = ^(NSArray *placemarks, NSError *error) {
                 if (error) {
                     block(nil, nil, error);
                 } else {
                     CLPlacemark *placemark = [placemarks onlyObject];
                     block(placemark, self.name, error);
                 }
-            }];
+            };
+            
+            if (placeDictionary[@"geometry"][@"location"])  {
+                CLLocationDegrees lat = [placeDictionary[@"geometry"][@"location"][@"lat"] doubleValue];
+                CLLocationDegrees lng = [placeDictionary[@"geometry"][@"location"][@"lng"] doubleValue];
+                
+                CLLocation *location = [[CLLocation alloc] initWithLatitude:lat longitude:lng];
+                [[self geocoder] reverseGeocodeLocation:location completionHandler:completionHandler];
+            } else {
+                NSString *addressString = placeDictionary[@"formatted_address"];
+                [[self geocoder] geocodeAddressString:addressString completionHandler:completionHandler];
+            }
         }
     }];
 }
